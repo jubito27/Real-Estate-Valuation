@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gurgaon Real Estate Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Upgraded to v2.35.2 to perfectly support modern map traces -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#172033', 950: '#0b0f19' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .hidden-section { display: none; }
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-left-color: #fff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Dark mode scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        /* Force dropdown styling to look good in dark mode */
+        select { color-scheme: dark; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 font-sans flex h-screen overflow-hidden selection:bg-indigo-500 selection:text-white">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-950 text-slate-300 flex flex-col shadow-2xl border-r border-slate-800 z-20">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
+            <h1 class="text-lg font-bold tracking-wider text-white"><i class="fa-solid fa-city mr-2 text-indigo-500"></i> Gurgaon RE</h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 mt-2">
+            <button onclick="switchTab('predictor')" id="tab-predictor" class="w-full text-left px-4 py-3 rounded-lg bg-indigo-600 text-white font-medium transition-all shadow-lg shadow-indigo-900/20">
+                <i class="fa-solid fa-calculator w-5"></i> Price Predictor
+            </button>
+            <button onclick="switchTab('analytics')" id="tab-analytics" class="w-full text-left px-4 py-3 rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white">
+                <i class="fa-solid fa-chart-line w-5"></i> Analytics App
+            </button>
+            <button onclick="switchTab('recommender')" id="tab-recommender" class="w-full text-left px-4 py-3 rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white">
+                <i class="fa-solid fa-map-location-dot w-5"></i> Recommender
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8">
+        
+        <!-- SECTION 1: PRICE PREDICTOR -->
+        <section id="predictor-section" class="max-w-4xl mx-auto">
+            <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 overflow-hidden">
+                <div class="px-8 py-6 border-b border-slate-700 bg-slate-850">
+                    <h3 class="text-2xl font-bold text-white tracking-tight">Predict Property Price</h3>
+                    <p class="mt-2 text-sm text-slate-400">Enter property details below to calculate an estimated market price range.</p>
+                </div>
+                <div class="p-8">
+                    <form id="predict-form" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Selects Dark Theme -->
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Property Type</label><select id="p_type" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"><option value="flat">Flat</option><option value="house">House</option></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Sector</label><select id="p_sector" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Bedrooms</label><select id="p_bed" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Bathrooms</label><select id="p_bath" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Balconies</label><select id="p_balc" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Property Age</label><select id="p_age" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Built Up Area (sqft)</label><input type="number" id="p_area" required class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all placeholder-slate-400" placeholder="e.g. 1500"></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Servant Room</label><select id="p_servant" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"><option value="0">No</option><option value="1">Yes</option></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Store Room</label><select id="p_store" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"><option value="0">No</option><option value="1">Yes</option></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Furnishing Type</label><select id="p_furnish" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Luxury Category</label><select id="p_luxury" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"></select></div>
+                        <div><label class="block text-sm font-medium text-slate-300 mb-1">Floor Category</label><select id="p_floor" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 border p-2.5 outline-none transition-all"></select></div>
+                        
+                        <div class="col-span-full mt-4 pt-4 border-t border-slate-700">
+                            <button type="submit" class="w-full md:w-auto inline-flex justify-center items-center px-8 py-3 text-base font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500 transition-all shadow-lg shadow-indigo-900/50">
+                                <span id="predict-text">Predict Price</span>
+                                <div id="predict-spinner" class="spinner ml-3 hidden"></div>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Prediction Result (Dark Emerald Theme) -->
+                    <div id="prediction-result" class="hidden mt-6 bg-emerald-900/30 border border-emerald-500/30 rounded-xl p-5 shadow-inner">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0"><i class="fa-solid fa-tags text-2xl text-emerald-400"></i></div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-emerald-400 uppercase tracking-wider">Estimated Market Value</p>
+                                <p class="text-3xl font-bold text-white mt-1">₹ <span id="price-output"></span> Cr</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: ANALYTICS APP -->
+        <section id="analytics-section" class="hidden-section space-y-8">
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-white tracking-tight">Market Analytics</h2>
+                    <p class="text-slate-400 mt-1">Interactive data visualizations based on Gurgaon Real Estate.</p>
+                </div>
+            </div>
+            
+            <!-- Geomap -->
+            <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6">
+                <h3 class="text-xl font-bold text-white mb-4">Sector Price per Sqft Geomap</h3>
+                <div id="plot-geomap" class="h-96 w-full bg-slate-850 rounded-lg overflow-hidden border border-slate-700"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Area Vs Price -->
+                <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-white">Area Vs Price</h3>
+                        <select id="plot-scatter-select" onchange="loadScatterPlot()" class="bg-slate-700 border-slate-600 text-white rounded-md border py-1.5 px-3 text-sm outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option value="flat">Flat</option><option value="house">House</option>
+                        </select>
+                    </div>
+                    <div id="plot-scatter" class="h-80 w-full"></div>
+                </div>
+                
+                <!-- BHK Pie Chart -->
+                <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-white">BHK Distribution</h3>
+                        <select id="plot-pie-select" onchange="loadPieChart()" class="bg-slate-700 border-slate-600 text-white rounded-md border py-1.5 px-3 text-sm outline-none focus:ring-1 focus:ring-indigo-500"></select>
+                    </div>
+                    <div id="plot-pie" class="h-80 w-full"></div>
+                </div>
+            </div>
+
+            <!-- Boxplot & Distplot -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6">
+                    <h3 class="text-xl font-bold text-white mb-4">BHK Price Range</h3>
+                    <div id="plot-boxplot" class="h-80 w-full"></div>
+                </div>
+                <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6">
+                    <h3 class="text-xl font-bold text-white mb-4">Price Distribution</h3>
+                    <img id="plot-distplot" class="w-full h-auto rounded-lg border border-slate-700" src="" alt="Loading...">
+                </div>
+            </div>
+            
+            <!-- Wordcloud -->
+            <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6">
+                <h3 class="text-xl font-bold text-white mb-4">Key Selling Features</h3>
+                <div class="flex justify-center">
+                    <img id="plot-wordcloud" class="max-w-full rounded-lg shadow-lg border border-slate-700" src="" alt="Loading...">
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: RECOMMENDER -->
+        <section id="recommender-section" class="hidden-section space-y-8 max-w-5xl mx-auto">
+            
+            <!-- Location Radius Search -->
+            <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 overflow-hidden">
+                <div class="px-8 py-6 border-b border-slate-700 bg-slate-850">
+                    <h3 class="text-2xl font-bold text-white">Location Radius Search</h3>
+                    <p class="mt-1 text-sm text-slate-400">Find localities within a specific distance threshold.</p>
+                </div>
+                <div class="p-8">
+                    <form id="radius-form" class="flex flex-col md:flex-row gap-6 items-end">
+                        <div class="flex-1 w-full"><label class="block text-sm font-medium text-slate-300 mb-1">Center Location</label><select id="r_location" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 border p-2.5 outline-none"></select></div>
+                        <div class="flex-1 w-full"><label class="block text-sm font-medium text-slate-300 mb-1">Radius (in Kms)</label><input type="number" step="0.1" id="r_radius" required class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 border p-2.5 outline-none" value="2"></div>
+                        <button type="submit" class="w-full md:w-auto px-8 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-900/30">Search Area</button>
+                    </form>
+                    <div id="radius-results" class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 hidden"></div>
+                </div>
+            </div>
+
+            <!-- Apartment Recommender -->
+            <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 overflow-hidden">
+                <div class="px-8 py-6 border-b border-slate-700 bg-slate-850">
+                    <h3 class="text-2xl font-bold text-white">Similar Apartment Recommender</h3>
+                    <p class="mt-1 text-sm text-slate-400">AI-based recommendations for visually and structurally similar properties.</p>
+                </div>
+                <div class="p-8">
+                    <form id="recommend-form" class="flex flex-col md:flex-row gap-6 items-end">
+                        <div class="flex-1 w-full"><label class="block text-sm font-medium text-slate-300 mb-1">Select an Apartment</label><select id="r_apartment" class="w-full rounded-lg border-slate-600 bg-slate-700 text-white focus:border-indigo-500 border p-2.5 outline-none"></select></div>
+                        <button type="submit" class="w-full md:w-auto px-8 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-900/30">Recommend</button>
+                    </form>
+                    
+                    <div class="mt-8 overflow-hidden rounded-lg border border-slate-700 hidden" id="recommend-table-container">
+                        <table class="min-w-full divide-y divide-slate-700">
+                            <thead class="bg-slate-850">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Property Name</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Similarity Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recommend-tbody" class="bg-slate-800 divide-y divide-slate-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+    
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
