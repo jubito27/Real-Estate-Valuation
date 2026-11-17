@@ -24,7 +24,7 @@ CARD_BG_COLOR = "#1e293b" # Matches Tailwind's bg-slate-800
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 df = pd.read_pickle(os.path.join(DATA_DIR, 'df.pkl'))
-pipeline = pd.read_pickle(os.path.join(DATA_DIR, 'pipeline.pkl'))
+pipeline = pd.read_pickle(os.path.join(DATA_DIR, 'pipeline_150.pkl'))
 
 new_df = pd.read_csv(os.path.join(DATA_DIR, 'data_viz1.csv'))
 numeric_columns = ["price", "price_per_sqft", "built_up_area", "latitude", "longitude", "bedRoom"]
